@@ -86,8 +86,7 @@
         style="max-width: 480px; background: #fff; border-left: 1px solid #eee; border-right: 1px solid #eee; min-height: 100vh; padding: 0 14px; box-sizing: border-box; display: flex; flex-direction: column;">
         <header style="padding-top: 72px;">
             <a href="/">
-                <img style="border-radius: 50%; margin: 0; filter: grayscale(100%);" src="/ui/avatar.png"
-                    alt="Sohail Sarwar" width="60" height="60">
+                <img style="border-radius: 50%; margin: 0;" src="/ui/avatar.png" alt="author" width="60" height="60">
             </a>
             <div style="margin-top: -4px;">
                 <h1 style="margin: 0;"><a href="/"

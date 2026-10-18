@@ -245,8 +245,7 @@ function parse_markdown($text)
         style="max-width: 480px; background: #fff; border-left: 1px solid #eee; border-right: 1px solid #eee; min-height: 100vh; padding: 0 14px; box-sizing: border-box; display: flex; flex-direction: column;">
         <header style="padding-top: 32px; display: flex; flex-direction: column;">
             <a href="/">
-                <img style="border-radius: 50%; margin: 0; filter: grayscale(100%);" src="/ui/avatar.png"
-                    alt="Sohail Sarwar" width="48" height="48">
+                <img style="border-radius: 50%; margin: 0;" src="/ui/avatar.png" alt="author" width="48" height="48">
             </a>
             <a href="/" style="margin-top: 24px;" class="back-link">← Back to Index</a>
         </header>
