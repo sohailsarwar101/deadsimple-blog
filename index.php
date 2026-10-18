@@ -100,42 +100,54 @@
 
         <main style="border-top: 1px solid #eee; padding-top: 6px; margin-top: 20px; flex: 1;">
             <?php
-            $posts = glob("posts/post_*.md");
+            $posts = glob(__DIR__ . "/posts/*.md");
 
             if (empty($posts)) {
                 echo "<p>No posts found yet. Send an email to get started!</p>";
             } else {
-                array_multisort(array_map('filemtime', $posts), SORT_DESC, $posts);
+                // Newest first (by file modified time)
+                usort($posts, fn($a, $b) => filemtime($b) <=> filemtime($a));
 
                 $posts_per_page = 10;
                 $total_posts = count($posts);
-                $total_pages = ceil($total_posts / $posts_per_page);
+                $total_pages = (int) ceil($total_posts / $posts_per_page);
 
                 $current_page = isset($_GET['page']) ? (int) $_GET['page'] : 1;
                 if ($current_page < 1)
                     $current_page = 1;
-                if ($current_page > $total_pages && $total_pages > 0)
+                if ($current_page > $total_pages)
                     $current_page = $total_pages;
 
                 $offset = ($current_page - 1) * $posts_per_page;
                 $paged_posts = array_slice($posts, $offset, $posts_per_page);
 
                 foreach ($paged_posts as $post_file) {
-                    $file_lines = file($post_file);
+                    // File name IS the slug: posts/post-one.md -> "post-one"
+                    $slug = basename($post_file, '.md');
 
-                    // 🔒 SAFE EXTRACTION: Parses explicit line prefixes
-                    $title = str_replace("TITLE: ", "", trim($file_lines[0]));
-                    $slug = str_replace("SLUG: ", "", trim($file_lines[1]));
-                    $date = str_replace("DATE: ", "", trim($file_lines[2]));
+                    // Title = first non-empty line of the file, minus markdown "#" marks
+                    $title = '';
+                    $fh = fopen($post_file, 'r');
+                    if ($fh) {
+                        while (($line = fgets($fh)) !== false) {
+                            $line = trim(preg_replace('/^\xEF\xBB\xBF/', '', $line)); // strip BOM
+                            if ($line !== '') {
+                                $title = trim(ltrim($line, "# \t"));
+                                break;
+                            }
+                        }
+                        fclose($fh);
+                    }
+                    // Fallback: prettify the slug ("post-one" -> "Post One")
+                    if ($title === '') {
+                        $title = ucwords(str_replace(['-', '_'], ' ', $slug));
+                    }
 
-                    preg_match('/post_(.*?)\.md/', $post_file, $matches);
-                    $post_hash = $matches[1];
-                    $clean_date = date("D, j M Y", strtotime($date));
-
-                    $clean_url = trim($slug) . "-" . $post_hash;
+                    $clean_date = date("D, j M Y", filemtime($post_file));
+                    $clean_url = "/" . rawurlencode($slug);
 
                     echo "<article>";
-                    echo "<h2><a href='" . $clean_url . "'>" . htmlspecialchars($title) . "</a></h2>";
+                    echo "<h2><a href='" . htmlspecialchars($clean_url, ENT_QUOTES) . "'>" . htmlspecialchars($title) . "</a></h2>";
                     echo "<small>Published on: " . htmlspecialchars($clean_date) . "</small>";
                     echo "</article>";
                 }
@@ -151,8 +163,7 @@
                     }
 
                     if ($current_page < $total_pages) {
-                        $next_page = $current_page + 1;
-                        echo "<a href='?page=" . $next_page . "'>Next →</a>";
+                        echo "<a href='?page=" . ($current_page + 1) . "'>Next →</a>";
                     } else {
                         echo "<span class='disabled'>Next →</span>";
                     }

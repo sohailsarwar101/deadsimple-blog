@@ -1,33 +1,41 @@
 <?php
-if (!isset($_GET['id']) || !preg_match('/^[a-f0-9]{32}$/', $_GET['id'])) {
-    header("Location: index.php");
+// Slug comes from the URL: /post-one -> posts/post-one.md
+$slug = $_GET['slug'] ?? '';
+
+// Only allow safe characters (blocks ../ and other path tricks)
+if (!preg_match('/^[A-Za-z0-9_-]+$/', $slug)) {
+    header("Location: /");
     exit;
 }
 
-$post_hash = $_GET['id'];
-$post_file = "posts/post_" . $post_hash . ".md";
+$post_file = __DIR__ . "/posts/" . $slug . ".md";
 
-if (!file_exists($post_file)) {
+if (!is_file($post_file)) {
+    http_response_code(404);
     die("Post not found.");
 }
 
-$content = file_get_contents($post_file);
 $file_lines = file($post_file);
-$title = str_replace("TITLE: ", "", trim($file_lines[0]));
-$slug = str_replace("SLUG: ", "", trim($file_lines[1]));
-$date = str_replace("DATE: ", "", trim($file_lines[2]));
-$clean_date = date("D, j M Y", strtotime($date));
 
-// 🔧 FIX: Start slice at index 5 to completely skip the "CONTENT:" metadata line label
-// Find the CONTENT: line dynamically instead of hardcoding an index
-$content_index = 3;
+// Title = first non-empty line (minus markdown "#" marks); body = everything after it
+$title = '';
+$title_index = -1;
 foreach ($file_lines as $i => $l) {
-    if (stripos(trim($l), 'CONTENT:') === 0) {
-        $content_index = $i;
+    $l = trim(preg_replace('/^\xEF\xBB\xBF/', '', $l)); // strip BOM
+    if ($l !== '') {
+        $title = trim(ltrim($l, "# \t"));
+        $title_index = $i;
         break;
     }
 }
-$raw_body = ltrim(implode("", array_slice($file_lines, $content_index + 1)), "\r\n");
+if ($title === '') {
+    $title = ucwords(str_replace(['-', '_'], ' ', $slug));
+}
+
+$raw_body = ltrim(implode("", array_slice($file_lines, $title_index + 1)), "\r\n");
+
+// Same date source as the index page
+$clean_date = date("D, j M Y", filemtime($post_file));
 
 // 📝 ULTRA-LIGHTWEIGHT NATIVE MARKDOWN PARSER
 function parse_inline($text)
@@ -40,9 +48,13 @@ function parse_inline($text)
         return '<img src="' . $m[2] . '" alt="' . $m[1] . '" loading="lazy">';
     }, $text);
 
-    // Bold, then italics
+    // Bold+italic, bold, then italics (both * and _ styles)
+    $text = preg_replace('/\*\*\*(.+?)\*\*\*/', '<strong><em>$1</em></strong>', $text);
     $text = preg_replace('/\*\*(.+?)\*\*/', '<strong>$1</strong>', $text);
+    $text = preg_replace('/(?<!\w)__(.+?)__(?!\w)/', '<strong>$1</strong>', $text);
     $text = preg_replace('/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/', '<em>$1</em>', $text);
+    // Underscore italics: the \w guards keep snake_case words and URLs untouched
+    $text = preg_replace('/(?<![\w_])_(?!_)(.+?)(?<!_)_(?![\w_])/', '<em>$1</em>', $text);
 
     // Links (only allow safe schemes)
     $text = preg_replace_callback('/\[([^\]]+)\]\(([^)\s]+)\)/', function ($m) {
@@ -117,7 +129,9 @@ function parse_markdown($text)
             $flushPara();
             $openList('ol');
             $out[] = '<li>' . parse_inline($m[1]) . '</li>';
-        } elseif (preg_match('/^!\[([^\]]*)\]\(([^)\s]+)\)$/', $line)) {
+        }
+        // Standalone image
+        elseif (preg_match('/^!\[([^\]]*)\]\(([^)\s]+)\)$/', $line)) {
             $flushPara();
             $closeList();
             $out[] = '<figure>' . parse_inline($line) . '</figure>';

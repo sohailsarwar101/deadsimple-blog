@@ -4,5 +4,5 @@ RewriteEngine On
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 
-# Redirect ://domain.com to post.php?id=hash-here
-RewriteRule ^([a-z0-9-]+)-([a-f0-9]{32})$ post.php?id=$2 [L,QSA]
+# domain.com/post-one -> post.php?slug=post-one
+RewriteRule ^([a-zA-Z0-9_-]+)/?$ post.php?slug=$1 [L,QSA]
