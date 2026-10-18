@@ -29,13 +29,6 @@ foreach ($file_lines as $i => $l) {
 }
 $raw_body = ltrim(implode("", array_slice($file_lines, $content_index + 1)), "\r\n");
 
-$blog_email = 'sohail.homeallure+blog@gmail.com';
-$secret_prefix = '[BLOG]';
-
-$mail_subject = rawurlencode("Re: " . $secret_prefix . " " . trim($title));
-$mail_body = rawurlencode("\n\n--- Write your comment ABOVE this line ---\n(Please keep the subject line intact so your comment nests correctly.)");
-$mailto_url = "mailto:" . $blog_email . "?subject=" . $mail_subject . "&body=" . $mail_body;
-
 // 📝 ULTRA-LIGHTWEIGHT NATIVE MARKDOWN PARSER
 function parse_inline($text)
 {
@@ -229,60 +222,6 @@ function parse_markdown($text)
             display: block;
             margin: 20px 0;
         }
-
-        .email-link-container {
-            margin-top: 30px;
-            margin-bottom: 30px;
-            border-top: 1px solid #eee;
-            padding-top: 20px;
-        }
-
-        .email-btn {
-            display: inline-block;
-            background: #0066cc;
-            color: white;
-            text-decoration: none;
-            padding: 10px 20px;
-            border-radius: 4px;
-            font-weight: bold;
-        }
-
-        .email-btn:hover {
-            background: #004c99;
-        }
-
-        .comment-section {
-            margin-top: 40px;
-            background: #f9f9f9;
-            padding: 25px;
-            border-left: 4px solid #0066cc;
-            border-radius: 4px;
-        }
-
-        .comment-section h3 {
-            margin-top: 0;
-            margin-bottom: 20px;
-            color: #333;
-        }
-
-        .comment {
-            border-bottom: 1px solid #e0e0e0;
-            padding-bottom: 20px;
-            margin-bottom: 20px;
-        }
-
-        .comment:last-child {
-            border-bottom: none;
-            padding-bottom: 0;
-            margin-bottom: 0;
-        }
-
-        .comment-meta {
-            font-weight: bold;
-            color: #555;
-            font-size: 0.85rem;
-            margin-bottom: 5px;
-        }
     </style>
 </head>
 
@@ -292,7 +231,7 @@ function parse_markdown($text)
         style="max-width: 480px; background: #fff; border-left: 1px solid #eee; border-right: 1px solid #eee; min-height: 100vh; padding: 0 14px; box-sizing: border-box; display: flex; flex-direction: column;">
         <header style="padding-top: 32px; display: flex; flex-direction: column;">
             <a href="/">
-                <img style="border-radius: 50%; margin: 0; filter: grayscale(100%);" src="/ui/sohail-sarwar.png"
+                <img style="border-radius: 50%; margin: 0; filter: grayscale(100%);" src="/ui/avatar.png"
                     alt="Sohail Sarwar" width="48" height="48">
             </a>
             <a href="/" style="margin-top: 24px;" class="back-link">← Back to Index</a>
@@ -305,72 +244,11 @@ function parse_markdown($text)
                 <!-- ⚡ Render parsed Markdown content -->
                 <div class="post-body"><?php echo parse_markdown($raw_body); ?></div>
             </article>
-
-            <!--
-            <div class="email-link-container">
-                <a href="<?php // echo $mailto_url; ?>" class="email-btn">Comment via Email</a>
-            </div>
-            -->
-
-            <?php
-            $comment_file = "posts/comments_" . $post_hash . ".md";
-            if (file_exists($comment_file) && !empty(trim(file_get_contents($comment_file)))) {
-                echo "<div class='comment-section'>";
-                echo "<h3>Discussion Room</h3>";
-
-                $all_comments = str_replace("\r\n", "\n", file_get_contents($comment_file));
-                $comments_array = preg_split('/^={10,}\s*$/m', $all_comments);
-
-                foreach ($comments_array as $individual_comment) {
-                    $individual_comment = trim($individual_comment);
-                    if ($individual_comment === '')
-                        continue;
-
-                    $lines = explode("\n", $individual_comment);
-                    $raw_from = isset($lines[0]) ? str_replace("FROM: ", "", trim($lines[0])) : 'Anonymous Reader';
-                    $c_raw_date = isset($lines[1]) ? str_replace("DATE: ", "", trim($lines[1])) : date('Y-m-d');
-
-                    $display_name = "Anonymous Reader";
-                    if (preg_match('/^(.*?)\s*<(.*?)>/', $raw_from, $matches)) {
-                        $name_part = trim($matches[1], '"\' ');
-                        if (!empty($name_part)) {
-                            $display_name = $name_part;
-                        } else {
-                            list($user, $domain) = explode('@', trim($matches[2]), 2);
-                            $display_name = substr($user, 0, 3) . '***@' . $domain;
-                        }
-                    } else {
-                        if (strpos($raw_from, '@') !== false) {
-                            list($user, $domain) = explode('@', $raw_from, 2);
-                            $display_name = substr($user, 0, 3) . '***@' . $domain;
-                        } else {
-                            $display_name = trim($raw_from);
-                        }
-                    }
-
-                    $c_clean_date = date("D, j M Y", strtotime($c_raw_date));
-                    $c_body_lines = array_slice($lines, 2);
-                    $c_body = implode("\n", $c_body_lines);
-                    $c_body = preg_replace('/^BODY:\s*/i', '', trim($c_body));
-
-                    // Apply the same line unwrap filter to the comment layout bodies
-                    $c_body = preg_replace('/(?<!\n)\n(?!\n)/', ' ', $c_body);
-
-                    if (!empty(trim($c_body))) {
-                        echo "<div class='comment'>";
-                        echo "<div class='comment-meta'>" . htmlspecialchars($display_name) . " • <span style='font-weight:normal; color:#888;'>" . htmlspecialchars($c_clean_date) . "</span></div>";
-                        echo "<p style='margin: 0; white-space: pre-wrap;'>" . htmlspecialchars(trim($c_body)) . "</p>";
-                        echo "</div>";
-                    }
-                }
-                echo "</div>";
-            }
-            ?>
         </main>
 
         <footer
             style="padding-bottom: 24px; margin-top: auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
-            <div style="">
+            <div>
                 <small style="display: flex; gap: 14px;">
                     <a href="https://x.com/SohailSarwar101" target="_blank">X</a>
                     <a href="https://www.linkedin.com/in/sohailsarwar101/" target="_blank">LinkedIn</a>
