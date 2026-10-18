@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sohail's Blog</title>
+    <title>deadSimple Blog</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -163,7 +163,7 @@
         </main>
         <footer
             style="padding-bottom: 24px; margin-top: auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
-            <div style="">
+            <div>
                 <small style="display: flex; gap: 14px;">
                     <a href="https://x.com/SohailSarwar101" target="_blank">X</a>
                     <a href="https://www.linkedin.com/in/sohailsarwar101/" target="_blank">LinkedIn</a>
