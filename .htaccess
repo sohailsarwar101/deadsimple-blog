@@ -1,0 +1,8 @@
+RewriteEngine On
+
+# Prevent rewriting if the request points to a real existing file or folder
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Redirect ://domain.com to post.php?id=hash-here
+RewriteRule ^([a-z0-9-]+)-([a-f0-9]{32})$ post.php?id=$2 [L,QSA]
