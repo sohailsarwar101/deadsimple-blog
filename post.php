@@ -106,7 +106,7 @@ function parse_markdown($text)
         }
 
         // Headers
-        if (preg_match('/^(#{1,3})\s+(.*)$/', $line, $m)) {
+        if (preg_match('/^(#{1,6})\s+(.*)$/', $line, $m)) {
             $flushPara();
             $closeList();
             $n = strlen($m[1]);
@@ -193,8 +193,32 @@ function parse_markdown($text)
         h1 {
             margin-bottom: 5px;
             color: #111;
-            font-size: 1.1rem;
+            font-size: 1.15rem;
+            font-weight: 500;
         }
+
+        h2 {
+            margin-bottom: 5px;
+            color: #111;
+            font-size: 1.05rem;
+            font-weight: 500;
+        }
+
+        h3 {
+            margin-bottom: 5px;
+            color: #111;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        h4,
+        h5,
+        h6 {
+            color: #111;
+            font-size: 15px;
+            font-weight: 500;
+        }
+
 
         small {
             color: #777;
