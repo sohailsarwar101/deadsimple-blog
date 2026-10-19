@@ -149,6 +149,20 @@ function parse_markdown($text)
     return implode("\n", $out);
 }
 
+function get_meta_description($raw_body, $limit = 150)
+{
+    $html = parse_markdown($raw_body);
+    $plain = strip_tags($html);
+    $clean = preg_replace('/\s+/', ' ', trim($plain));
+
+    if (mb_strlen($clean) <= $limit) {
+        return $clean;
+    }
+
+    $trimmed = mb_substr($clean, 0, $limit);
+    return mb_substr($trimmed, 0, mb_strrpos($trimmed, ' ')) . '...';
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -156,7 +170,26 @@ function parse_markdown($text)
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="canonical" href="https://yourdomain.com/<?php echo htmlspecialchars($slug); ?>">
+    <meta name="author" content="Sohail Sarwar">
+
     <title><?php echo htmlspecialchars($title); ?> - deadSimple Blog</title>
+
+    <!-- Open Graph / Facebook (Notice type changes to 'article') -->
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="<?php echo htmlspecialchars($title); ?>">
+    <meta property="og:description"
+        content="<?php echo htmlspecialchars(get_meta_description($raw_body), ENT_QUOTES, 'UTF-8'); ?>">
+    <meta property="og:url" content="https://yourdomain.com/<?php echo htmlspecialchars($slug); ?>">
+    <meta property="article:published_time" content="<?php echo date('c', filemtime($post_file)); ?>">
+    <meta property="article:author" content="Sohail Sarwar">
+
+    <!-- Twitter Cards -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="<?php echo htmlspecialchars($title); ?>">
+    <meta name="twitter:description"
+        content="<?php echo htmlspecialchars(get_meta_description($raw_body), ENT_QUOTES, 'UTF-8'); ?>">
+
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;

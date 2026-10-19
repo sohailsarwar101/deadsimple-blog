@@ -4,7 +4,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://yourdomain.com">
+    <meta name="author" content="Sohail Sarwar">
+
     <title>deadSimple Blog</title>
+    <meta name="description" content="deadSimple Blog ...">
+
+    <!-- Open Graph / Facebook (For social sharing optimization) -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="deadSimple Blog">
+    <meta property="og:description" content="deadSimple Blog ...">
+    <meta property="og:url" content="https://yourdomain.com">
+    <meta property="og:image" content="https://yourdomain.com">
+
+    <!-- Twitter Cards -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="deadSimple Blog">
+    <meta name="twitter:description" content="deadSimple Blog ...">
+    <meta name="twitter:image" content="https://yourdomain.com">
+
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
