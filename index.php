@@ -118,73 +118,47 @@
 
         <main style="border-top: 1px solid #eee; padding-top: 6px; margin-top: 20px; flex: 1;">
             <?php
-            $posts = glob(__DIR__ . "/posts/*.md");
+            date_default_timezone_set('Asia/Dubai');
+            $items = [];
 
-            if (empty($posts)) {
-                echo "<p>No posts found yet. Send an email to get started!</p>";
+            foreach (glob(__DIR__ . "/posts/*.md") as $f) {
+                $slug = basename($f, '.md');
+                $head = implode("\n", array_slice(file($f, FILE_IGNORE_NEW_LINES), 0, 5));
+
+                // Title = first non-empty line, minus "#" marks
+                $title = preg_match('/^\s*#*\s*(\S.*)$/m', $head, $t) ? trim($t[1]) : ucwords(str_replace(['-', '_'], ' ', $slug));
+
+                // Date = "Date:" line near the top, else file modified time
+                $ts = (preg_match('/^date:\s*(.+)$/mi', $head, $d) ? strtotime($d[1]) : 0) ?: filemtime($f);
+
+                $items[] = ['slug' => $slug, 'title' => $title, 'ts' => $ts];
+            }
+
+            if (!$items) {
+                echo "<p>No posts found yet.</p>";
             } else {
-                // Newest first (by file modified time)
-                usort($posts, fn($a, $b) => filemtime($b) <=> filemtime($a));
+                // Newest first, ties broken by name so the order never jumps around
+                usort($items, fn($a, $b) => [$b['ts'], $b['slug']] <=> [$a['ts'], $a['slug']]);
 
-                $posts_per_page = 10;
-                $total_posts = count($posts);
-                $total_pages = (int) ceil($total_posts / $posts_per_page);
+                $per_page = 10;
+                $total_pages = (int) ceil(count($items) / $per_page);
+                $current_page = max(1, min((int) ($_GET['page'] ?? 1), $total_pages));
 
-                $current_page = isset($_GET['page']) ? (int) $_GET['page'] : 1;
-                if ($current_page < 1)
-                    $current_page = 1;
-                if ($current_page > $total_pages)
-                    $current_page = $total_pages;
-
-                $offset = ($current_page - 1) * $posts_per_page;
-                $paged_posts = array_slice($posts, $offset, $posts_per_page);
-
-                foreach ($paged_posts as $post_file) {
-                    // File name IS the slug: posts/post-one.md -> "post-one"
-                    $slug = basename($post_file, '.md');
-
-                    // Title = first non-empty line of the file, minus markdown "#" marks
-                    $title = '';
-                    $fh = fopen($post_file, 'r');
-                    if ($fh) {
-                        while (($line = fgets($fh)) !== false) {
-                            $line = trim(preg_replace('/^\xEF\xBB\xBF/', '', $line)); // strip BOM
-                            if ($line !== '') {
-                                $title = trim(ltrim($line, "# \t"));
-                                break;
-                            }
-                        }
-                        fclose($fh);
-                    }
-                    // Fallback: prettify the slug ("post-one" -> "Post One")
-                    if ($title === '') {
-                        $title = ucwords(str_replace(['-', '_'], ' ', $slug));
-                    }
-
-                    $clean_date = date("D, j M Y", filemtime($post_file));
-                    $clean_url = "/" . rawurlencode($slug);
-
+                foreach (array_slice($items, ($current_page - 1) * $per_page, $per_page) as $p) {
                     echo "<article>";
-                    echo "<h2><a href='" . htmlspecialchars($clean_url, ENT_QUOTES) . "'>" . htmlspecialchars($title) . "</a></h2>";
-                    echo "<small>Published on: " . htmlspecialchars($clean_date) . "</small>";
+                    echo "<h2><a href='/" . htmlspecialchars(rawurlencode($p['slug']), ENT_QUOTES) . "'>" . htmlspecialchars($p['title']) . "</a></h2>";
+                    echo "<small>Published on: " . date("D, j M Y", $p['ts']) . "</small>";
                     echo "</article>";
                 }
 
                 if ($total_pages > 1) {
                     echo "<div class='pagination'>";
-                    if ($current_page > 1) {
-                        $prev_page = $current_page - 1;
-                        $prev_url = ($prev_page === 1) ? "/" : "?page=" . $prev_page;
-                        echo "<a href='" . $prev_url . "'>← Previous</a>";
-                    } else {
-                        echo "<span class='disabled'>← Previous</span>";
-                    }
-
-                    if ($current_page < $total_pages) {
-                        echo "<a href='?page=" . ($current_page + 1) . "'>Next →</a>";
-                    } else {
-                        echo "<span class='disabled'>Next →</span>";
-                    }
+                    echo $current_page > 1
+                        ? "<a href='" . ($current_page - 1 === 1 ? "/" : "?page=" . ($current_page - 1)) . "'>← Previous</a>"
+                        : "<span class='disabled'>← Previous</span>";
+                    echo $current_page < $total_pages
+                        ? "<a href='?page=" . ($current_page + 1) . "'>Next →</a>"
+                        : "<span class='disabled'>Next →</span>";
                     echo "</div>";
                 }
             }

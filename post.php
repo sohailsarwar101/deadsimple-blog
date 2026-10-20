@@ -1,4 +1,5 @@
 <?php
+date_default_timezone_set('Asia/Dubai');
 // Slug comes from the URL: /post-one -> posts/post-one.md
 $slug = $_GET['slug'] ?? '';
 
@@ -32,10 +33,16 @@ if ($title === '') {
     $title = ucwords(str_replace(['-', '_'], ' ', $slug));
 }
 
-$raw_body = ltrim(implode("", array_slice($file_lines, $title_index + 1)), "\r\n");
+$raw_body = implode("", array_slice($file_lines, $title_index + 1));
 
-// Same date source as the index page
-$clean_date = date("D, j M Y", filemtime($post_file));
+// Optional "Date:" line right after the title
+$ts = filemtime($post_file);
+if (preg_match('/^\s*date:\s*(.+?)\s*(?:\R|$)/i', $raw_body, $m) && ($d = strtotime($m[1]))) {
+    $ts = $d;
+    $raw_body = substr($raw_body, strlen($m[0]));
+}
+$raw_body = ltrim($raw_body, "\r\n");
+$clean_date = date("D, j M Y", $ts);
 
 // 📝 ULTRA-LIGHTWEIGHT NATIVE MARKDOWN PARSER
 function parse_inline($text)

@@ -1,5 +1,7 @@
 # Your Post Title Here
 
+Date: 2026-10-19 14:30
+
 This is the first paragraph. Lines written one after another without a blank line are joined into the same paragraph, so you can wrap text however you like.
 
 A blank line starts a new paragraph. You can write **bold text**, _italic text_, and [a link](https://example.com).
