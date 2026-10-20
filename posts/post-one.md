@@ -4,6 +4,8 @@ This is the first paragraph. Lines written one after another without a blank lin
 
 A blank line starts a new paragraph. You can write **bold text**, _italic text_, and [a link](https://example.com).
 
+---
+
 ## A Section Heading
 
 Here is an unordered list:

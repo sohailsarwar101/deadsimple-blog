@@ -136,6 +136,12 @@ function parse_markdown($text)
             $closeList();
             $out[] = '<figure>' . parse_inline($line) . '</figure>';
         }
+        // Horizontal rule (---, ***, ___)
+        elseif (preg_match('/^(-{3,}|\*{3,}|_{3,})$/', $line)) {
+            $flushPara();
+            $closeList();
+            $out[] = '<hr>';
+        }
         // Regular text
         else {
             $closeList();
@@ -252,7 +258,6 @@ function get_meta_description($raw_body, $limit = 150)
             font-weight: 500;
         }
 
-
         small {
             color: #777;
             display: block;
@@ -265,6 +270,16 @@ function get_meta_description($raw_body, $limit = 150)
             margin-bottom: 40px;
             margin-top: 24px;
             text-align: justify;
+        }
+
+        .post-body strong {
+            font-weight: 600;
+        }
+
+        .post-body hr {
+            border: 0;
+            border-top: 1px solid #eee;
+            margin: 28px 0;
         }
 
         .post-body blockquote {
