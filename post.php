@@ -285,7 +285,7 @@ function get_meta_description($raw_body, $limit = 150)
     <meta property="og:description"
         content="<?php echo htmlspecialchars(get_meta_description($raw_body), ENT_QUOTES, 'UTF-8'); ?>">
     <meta property="og:url" content="https://yourdomain.com/<?php echo htmlspecialchars($slug); ?>">
-    <meta property="article:published_time" content="<?php echo date('c', filemtime($post_file)); ?>">
+    <meta property="article:published_time" content="<?php echo date('c', $ts); ?>">
     <meta property="article:author" content="Sohail Sarwar">
 
     <!-- Twitter Cards -->
