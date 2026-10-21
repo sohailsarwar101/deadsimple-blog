@@ -16,7 +16,7 @@ if (!is_file($post_file)) {
     die("Post not found.");
 }
 
-// ---- Likes ----
+// ---- Likes: counts live in data/likes.json, never in the post files ----
 const MAX_LIKES_PER_VISITOR = 10;
 
 $dataDir = __DIR__ . '/data';
@@ -26,10 +26,14 @@ if (!is_dir($dataDir)) {
     @file_put_contents($dataDir . '/.htaccess', "Require all denied\n"); // keep data/ private (Apache)
 }
 
-function likes_read($file)
+// Structure: {"counts": {"post-one": 12}, "visitors": {"<hash>": 3}}
+function likes_load($file)
 {
     $d = json_decode((string) @file_get_contents($file), true);
-    return is_array($d) ? $d : [];
+    return [
+        'counts' => is_array($d['counts'] ?? null) ? $d['counts'] : [],
+        'visitors' => is_array($d['visitors'] ?? null) ? $d['visitors'] : [],
+    ];
 }
 
 // Anonymous visitor id for this post: HMAC of IP + slug (raw IP is never stored)
@@ -43,56 +47,18 @@ function visitor_key($slug)
     return hash_hmac('sha256', ($_SERVER['REMOTE_ADDR'] ?? '') . '|' . $slug, $secret);
 }
 
+$key = visitor_key($slug);
+
+// ---- Handle a like click ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['like'])) {
-    $lock = fopen($dataDir . '/likes.lock', 'c');
+    $lock = @fopen($dataDir . '/likes.lock', 'c');
     if ($lock && flock($lock, LOCK_EX)) {
-        $tally = likes_read($likesFile);
-        $key = visitor_key($slug);
+        $store = likes_load($likesFile); // re-read inside the lock
 
-        if (($tally[$key] ?? 0) < MAX_LIKES_PER_VISITOR) {
-            $lines = file($post_file);
-
-            // Title line = first non-empty line
-            $ti = -1;
-            foreach ($lines as $i => $l) {
-                if (trim(preg_replace('/^\xEF\xBB\xBF/', '', $l)) !== '') {
-                    $ti = $i;
-                    break;
-                }
-            }
-
-            if ($ti >= 0) {
-                // Find an existing Likes line, or where to insert one (after title / Date line)
-                $likesAt = null;
-                $insertAt = $ti + 1;
-                for ($j = $ti + 1; $j < count($lines); $j++) {
-                    $t = trim($lines[$j]);
-                    if ($t === '')
-                        continue;
-                    if (!preg_match('/^(date|likes):/i', $t, $m))
-                        break;
-                    if (strtolower($m[1]) === 'likes') {
-                        $likesAt = $j;
-                        break;
-                    }
-                    $insertAt = $j + 1;
-                }
-
-                if ($likesAt !== null) {
-                    $cur = (int) preg_replace('/\D/', '', $lines[$likesAt]);
-                    $lines[$likesAt] = 'Likes: ' . ($cur + 1) . "\n";
-                } else {
-                    $lines[$insertAt - 1] = rtrim($lines[$insertAt - 1], "\r\n") . "\n";
-                    array_splice($lines, $insertAt, 0, "Likes: 1\n");
-                }
-
-                $mtime = filemtime($post_file);
-                if (@file_put_contents($post_file, implode('', $lines)) !== false) {
-                    touch($post_file, $mtime); // keep the original modified time
-                    $tally[$key] = ($tally[$key] ?? 0) + 1;
-                    file_put_contents($likesFile, json_encode($tally));
-                }
-            }
+        if (($store['visitors'][$key] ?? 0) < MAX_LIKES_PER_VISITOR) {
+            $store['counts'][$slug] = ($store['counts'][$slug] ?? 0) + 1;
+            $store['visitors'][$key] = ($store['visitors'][$key] ?? 0) + 1;
+            file_put_contents($likesFile, json_encode($store), LOCK_EX);
         }
         flock($lock, LOCK_UN);
     }
@@ -119,21 +85,18 @@ if ($title === '') {
 
 $raw_body = implode("", array_slice($file_lines, $title_index + 1));
 
-// Optional "Date:" and "Likes:" lines right after the title (any order)
+// Optional "Date:" line right after the title
 $ts = filemtime($post_file);
-$likes = 0;
-while (preg_match('/^\s*(date|likes):[ \t]*(.*?)[ \t]*(?:\R|$)/i', $raw_body, $m)) {
-    if (strtolower($m[1]) === 'date') {
-        if ($d = strtotime($m[2]))
-            $ts = $d;
-    } else {
-        $likes = max(0, (int) $m[2]);
-    }
+if (preg_match('/^\s*date:\s*(.+?)\s*(?:\R|$)/i', $raw_body, $m) && ($d = strtotime($m[1]))) {
+    $ts = $d;
     $raw_body = substr($raw_body, strlen($m[0]));
 }
 $raw_body = ltrim($raw_body, "\r\n");
 $clean_date = date("D, j M Y", $ts);
-$mine = likes_read($likesFile)[visitor_key($slug)] ?? 0; // likes this visitor has used
+
+$store = likes_load($likesFile);
+$likes = $store['counts'][$slug] ?? 0;  // total likes for this post
+$mine = $store['visitors'][$key] ?? 0;  // likes this visitor has already used
 
 // 📝 ULTRA-LIGHTWEIGHT NATIVE MARKDOWN PARSER
 function parse_inline($text)
